@@ -1,0 +1,51 @@
+name: CI
+on:
+  pull_request: null
+  push:
+    branches:
+      - main
+  workflow_dispatch: null
+  merge_group: null
+permissions: {}
+jobs:
+  # ── guard-installed-skill-edits (composite + hermetic suite) ─────────────
+  test-guard-installed-skill-edits:
+    timeout-minutes: 5
+    name: "\U0001F9EA Test Guard Installed Skill Edits"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: "\U0001F6E1️ Harden Runner"
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+      - name: ⬇️ Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The consumer-style invocation below needs BOTH the PR base and head commits to
+          # be locally readable. The default depth-1 checkout has neither (the checked-out
+          # ref is the synthetic merge commit), so the guard correctly exits 2 UNKNOWN and
+          # this REQUIRED job can never pass. fetch-depth: 0 is what the action's own README
+          # tells consumers to use, so the CI job must invoke it the documented way.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: "\U0001F9EA Run hermetic guard suite"
+        run: bash .github/tests/guard-installed-skill-edits.test.sh
+      - name: "\U0001F9EA Invoke composite as a consumer would"
+        uses: ./
+  ci-required-checks:
+    name: CI - Required Checks
+    if: ${{ always() }}
+    needs:
+      # ── guard-installed-skill-edits (composite + hermetic suite) ─────────────
+      - test-guard-installed-skill-edits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every behavior check
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        shell: bash
+        run: jq -e 'all(.[]; .result == "success")' <<< "$JOB_RESULTS"
