@@ -54,6 +54,10 @@ should exempt that lane at the workflow level.
 | `sync-actor` | Exact GitHub login of the programmed updater App | no | `botantler-1[bot]` |
 | `sync-branch` | Exact head-branch name of the programmed updater PR | no | `deps/agent-skills-update` |
 
+Equivalent dot components and repeated separators in `skill-root` are normalized before checking
+Git trees. Absolute paths and parent traversal are refused as invalid context. Renames check both
+the removed and added paths, so moving a file out of a retained synced skill is still an edit.
+
 ## Outputs
 
 This action has no outputs.

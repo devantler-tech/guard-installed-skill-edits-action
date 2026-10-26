@@ -14,12 +14,26 @@
 set -euo pipefail
 
 SKILL_ROOT="${SKILL_ROOT:-.agents/skills}"
-# Normalise before ANY use. Git emits repository-relative paths with no `./` prefix and no
-# trailing slash, so a consumer passing `./.agents/skills` (valid, and what a copied YAML
-# snippet often carries) would make every prefix comparison below fail and the guard would
-# exit 0 having matched nothing — silently permitting the edits it exists to refuse.
-while [ "${SKILL_ROOT#./}" != "${SKILL_ROOT}" ]; do SKILL_ROOT="${SKILL_ROOT#./}"; done
-while [ "${SKILL_ROOT%/}" != "${SKILL_ROOT}" ]; do SKILL_ROOT="${SKILL_ROOT%/}"; done
+# Git tree paths have neither dot components nor repeated separators. Normalize lexically,
+# without consulting the checkout (which may be sparse), before any tree lookup or comparison.
+# Parameter expansion also preserves whitespace and newlines in valid directory names.
+case "$SKILL_ROOT" in
+  /*) echo 'UNKNOWN: skill-root must be repository-relative' >&2; exit 2 ;;
+esac
+root_remaining="$SKILL_ROOT"
+SKILL_ROOT=''
+while :; do
+  root_component="${root_remaining%%/*}"
+  case "$root_component" in
+    ''|.) ;;
+    ..) echo 'UNKNOWN: skill-root must not contain parent traversal' >&2; exit 2 ;;
+    *) SKILL_ROOT="${SKILL_ROOT:+${SKILL_ROOT}/}${root_component}" ;;
+  esac
+  case "$root_remaining" in
+    */*) root_remaining="${root_remaining#*/}" ;;
+    *) break ;;
+  esac
+done
 SYNC_ACTOR="${SYNC_ACTOR:-botantler-1[bot]}"
 SYNC_BRANCH="${SYNC_BRANCH:-deps/agent-skills-update}"
 
@@ -236,7 +250,9 @@ list_changed_paths() {
   # is otherwise read as PATHSPEC MAGIC rather than a path, so the diff comes back EMPTY and
   # SUCCESSFUL and the guard exits 0 without examining a single edit. An empty diff and "nothing
   # changed here" are indistinguishable downstream, which is what makes this a silent permit.
-  git --no-replace-objects --literal-pathspecs diff --name-only -z "${BASE_SHA}...${HEAD_SHA}" -- "${ROOT_DIR}"
+  # Both sides matter: a rename into a new local directory still removes a file from a
+  # retained synced skill. Name-only rename output contains only the destination.
+  git --no-replace-objects --literal-pathspecs diff --no-renames --name-only -z "${BASE_SHA}...${HEAD_SHA}" -- "${ROOT_DIR}"
 }
 
 unknown=0

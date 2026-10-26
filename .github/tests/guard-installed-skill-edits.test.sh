@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Hermetic tests for guard-installed-skill-edits.sh.
-# Stubs git so the suite never needs a real repository or network.
+# Most cases stub Git; real temporary repositories cover path and rename semantics. No network.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -10,6 +10,8 @@ pass() { echo "PASS: $*"; }
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
+native_git="$(command -v git)"
+native_path="$PATH"
 PATH="${tmp}/bin:${PATH}"
 export PATH
 
@@ -1274,4 +1276,54 @@ else
 fi
 rm -f "${FAKE_GIT_STORE}/diff_out"
 pass "a skill directory name ending in a newline is not truncated"
+
+# Real Git must expose the same installed skill through equivalent root spellings and
+# both sides of a rename. The stub above cannot model Git's rename/path lookup semantics.
+real_repo="$tmp/real-repo"
+"$native_git" init -q -b main "$real_repo"
+"$native_git" -C "$real_repo" config user.name Fixture
+"$native_git" -C "$real_repo" config user.email fixture@example.invalid
+"$native_git" -C "$real_repo" config commit.gpgsign false
+mkdir -p "$real_repo/.agents/skills/synced"
+printf -- '---\nname: synced\nmetadata:\n  github-repo: https://github.com/devantler-tech/agent-skills\n---\nSynced skill.\n' > "$real_repo/.agents/skills/synced/SKILL.md"
+printf 'helper\n' > "$real_repo/.agents/skills/synced/helper.sh"
+"$native_git" -C "$real_repo" add .agents/skills/synced/SKILL.md .agents/skills/synced/helper.sh
+"$native_git" -C "$real_repo" commit -qm base
+real_base="$("$native_git" -C "$real_repo" rev-parse HEAD)"
+printf 'Edited guidance.\n' >> "$real_repo/.agents/skills/synced/SKILL.md"
+"$native_git" -C "$real_repo" add .agents/skills/synced/SKILL.md
+"$native_git" -C "$real_repo" commit -qm edit
+real_head="$("$native_git" -C "$real_repo" rev-parse HEAD)"
+real_failures=0
+expect_real_refusal() {
+  local skill_root="$1" label="$2" result=0 output
+  output="$(cd "$real_repo" && PATH="$native_path" BASE_SHA="$real_base" HEAD_SHA="$real_head" \
+    SKILL_ROOT="$skill_root" CHANGED_PATHS='' PR_ACTOR=fixture PR_HEAD_BRANCH=feature \
+    bash "$guard" 2>&1)" || result=$?
+  if [[ "$result" != 1 ]] || ! grep -qF 'devantler-tech/agent-skills' <<< "$output"; then
+    echo "FAIL: $label: expected upstream refusal, got status $result: $output" >&2
+    real_failures=$((real_failures + 1))
+  else
+    pass "$label"
+  fi
+}
+for spelling in .agents/skills .agents/skills/. .agents/./skills .agents//skills; do
+  expect_real_refusal "$spelling" "real Git root spelling $spelling checks synced edits"
+done
+for spelling in /tmp/skills ../skills .agents/../skills; do
+  result=0
+  output="$(cd "$real_repo" && PATH="$native_path" BASE_SHA="$real_base" HEAD_SHA="$real_head" \
+    SKILL_ROOT="$spelling" CHANGED_PATHS='' bash "$guard" 2>&1)" || result=$?
+  [[ "$result" == 2 && "$output" == UNKNOWN:* ]] || fail "invalid root $spelling did not fail closed"
+done
+pass 'absolute roots and parent traversal fail closed'
+# Use the unedited skill's base again, so the rename is the only change.
+"$native_git" -C "$real_repo" checkout -q "$real_base" -- .agents/skills/synced/SKILL.md
+mkdir -p "$real_repo/.agents/skills/new-local"
+"$native_git" -C "$real_repo" mv .agents/skills/synced/helper.sh .agents/skills/new-local/helper.sh
+"$native_git" -C "$real_repo" add .agents/skills/synced/SKILL.md
+"$native_git" -C "$real_repo" commit -qm rename
+real_head="$("$native_git" -C "$real_repo" rev-parse HEAD)"
+expect_real_refusal .agents/skills 'real Git rename from a retained synced skill is refused'
+[[ "$real_failures" == 0 ]] || fail "$real_failures real-repository guard regressions"
 echo "ALL PASS"
