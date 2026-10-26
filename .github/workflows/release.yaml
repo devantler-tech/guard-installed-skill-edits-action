@@ -6,7 +6,7 @@ on:
 permissions: {}
 jobs:
   release:
-    uses: devantler-tech/.github/.github/workflows/create-release.yaml@f5d078cc4b04ecb15432ed4e34cba1142a6279d4 # v13.2.15
+    uses: devantler-tech/.github/.github/workflows/create-release.yaml@c6ac1058d20508cba27d696230481396b2e9a08b # v13.3.1
     with:
       disable-issue-side-effects: true
       warn-missing-breaking-bang: true
