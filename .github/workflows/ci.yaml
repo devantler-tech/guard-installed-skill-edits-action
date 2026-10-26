@@ -33,7 +33,7 @@ jobs:
       - name: "\U0001F9EA Run hermetic guard suite"
         run: bash .github/tests/guard-installed-skill-edits.test.sh
       - name: "\U0001F9EA Invoke composite as a consumer would"
-        uses: ./
+        uses: $/
   ci-required-checks:
     name: CI - Required Checks
     if: ${{ always() }}
