@@ -1,23 +1,23 @@
 # Guard Installed Skill Edits
 
-Prevent pull requests from editing agent skills installed from another repository.
+Flag pull-request edits to agent skills installed from another repository.
 
 Use this action when your repository checks in skills installed with `gh skill`.
 Editing an installed copy can lose your changes the next time the skill is updated.
-The action fails the pull-request check and links to the skill's source repository,
+The action fails the pull-request check and names the skill's source repository,
 so contributors know where to make the fix.
 
 For example, if `.agents/skills/ways-of-working/SKILL.md` was installed from
-`devantler-tech/agent-skills`, a pull request editing that copy is blocked. Make the
+`devantler-tech/agent-skills`, a pull request editing that copy fails the check. Make the
 change in `devantler-tech/agent-skills`, then update the installed skill.
 
 | Pull-request change | Result |
 | --- | --- |
-| Edit a skill installed from another repository | Blocked, with a link to its source |
-| Add a new skill | Allowed |
-| Edit a skill maintained locally | Allowed |
-| Remove an entire skill | Allowed |
-| Update skills through the configured updater | Allowed when its account and branch match the configured inputs |
+| Edit a skill installed from another repository | Check fails and names its source repository |
+| Add a new skill | Check passes |
+| Edit a skill maintained locally | Check passes |
+| Remove an entire skill | Check passes |
+| Update skills through the configured updater | Check passes when its account and branch match the configured inputs |
 
 See [Usage](#usage) for the workflow example.
 
@@ -67,11 +67,15 @@ This action has no outputs.
 ## Usage
 
 Create `.github/workflows/guard-skills.yaml` with the following workflow. It checks
-pull requests on a GitHub-hosted Ubuntu runner, which includes the required `yq`.
+pull requests and merge-queue groups on a GitHub-hosted Ubuntu runner, which includes
+the required `yq`.
 
 ```yaml
 name: Guard installed skill edits
-on: [pull_request]
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
 permissions: {}
 
 jobs:
@@ -93,6 +97,14 @@ jobs:
 The example pins verified releases and needs no additional secrets. Check the
 [action releases](https://github.com/devantler-tech/guard-installed-skill-edits-action/releases)
 when choosing a newer version.
+
+To prevent merging edits that fail this check, make `guard` a required status check
+in your repository's branch protection or ruleset. The workflow reports failures;
+the repository rule enforces the merge requirement.
+
+The configured updater exemption uses the pull request's account and branch.
+`merge_group` events do not carry that pull-request identity, so merge queues need
+their own workflow-level handling for updater changes. See [Requirements](#requirements).
 
 ## How it detects changes
 
