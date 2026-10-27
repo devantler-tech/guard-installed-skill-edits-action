@@ -1,23 +1,25 @@
 # Guard Installed Skill Edits
 
-Refuse a hand-edit to a synced installed-skill tree and name the skill's
-upstream so the change is made there instead of being silently reverted.
+Prevent pull requests from editing agent skills installed from another repository.
 
-The check keys on `metadata.github-repo` in each skill's `SKILL.md` at the pull
-request **base**, not on the current path. Provenance must be a **direct child**
-of the `metadata` mapping: a top-level `github-repo`, or one nested deeper such
-as `metadata.source.github-repo`, is not provenance and does not mark a skill as
-synced — otherwise a stray key could make a local skill permanently uneditable.
-Adding a wholly new skill directory is allowed, and so is retiring one wholesale:
-removing an installed skill is a local decision, and only editing a synced one is
-not. The programmed `update-agent-skills` PR is exempt only when both the actor
-and the head branch match. Missing CI context, an unreadable `SKILL.md`, or
-provenance that cannot be READ is UNKNOWN rather than a silent pass. A record that reads cleanly and simply names no upstream means the skill is local, and a local skill stays editable.
+Use this action when your repository checks in skills installed with `gh skill`.
+Editing an installed copy can lose your changes the next time the skill is updated.
+The action fails the pull-request check and links to the skill's source repository,
+so contributors know where to make the fix.
 
-Changed paths come from the **merge base** (a three-dot diff), not from the two
-commits directly. A base branch that advances after a PR branches — most often
-the daily updater editing a synced skill — would otherwise be attributed to the
-PR, and the guard would refuse a pull request that never touched that skill.
+For example, if `.agents/skills/ways-of-working/SKILL.md` was installed from
+`devantler-tech/agent-skills`, a pull request editing that copy is blocked. Make the
+change in `devantler-tech/agent-skills`, then update the installed skill.
+
+| Pull-request change | Result |
+| --- | --- |
+| Edit a skill installed from another repository | Blocked, with a link to its source |
+| Add a new skill | Allowed |
+| Edit a skill maintained locally | Allowed |
+| Remove an entire skill | Allowed |
+| Update skills through the configured updater | Allowed when its account and branch match the configured inputs |
+
+See [Usage](#usage) for the workflow example.
 
 ## Requirements
 
@@ -115,6 +117,26 @@ a `github-repo` whose value is a mapping or a sequence rather than a scalar, an 
 a diff that cannot be computed, or `yq` missing from `PATH`. The action never treats any of those
 as "no provenance", because "no provenance" is what marks a skill local and editable — it is the
 verdict that permits the edit.
+
+## How it detects changes
+
+The check keys on `metadata.github-repo` in each skill's `SKILL.md` at the pull
+request **base**, not on the current path. Provenance must be a **direct child**
+of the `metadata` mapping: a top-level `github-repo`, or one nested deeper such
+as `metadata.source.github-repo`, is not provenance and does not mark a skill as
+synced — otherwise a stray key could make a local skill permanently uneditable.
+Adding a wholly new skill directory is allowed, and so is retiring one wholesale:
+removing an installed skill is a local decision, and only editing a synced one is
+not. The programmed `update-agent-skills` PR is exempt only when both the actor
+and the head branch match. Missing CI context, an unreadable `SKILL.md`, or
+provenance that cannot be read is UNKNOWN rather than a silent pass. A record that
+reads cleanly and simply names no source repository means the skill is local, and
+a local skill stays editable.
+
+Changed paths come from the **merge base** (a three-dot diff), not from the two
+commits directly. A base branch that advances after a PR branches — most often
+the daily updater editing a synced skill — would otherwise be attributed to the
+PR, and the guard would refuse a pull request that never touched that skill.
 
 ## Release recovery
 
