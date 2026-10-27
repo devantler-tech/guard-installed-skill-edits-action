@@ -66,6 +66,36 @@ This action has no outputs.
 
 ## Usage
 
+Create `.github/workflows/guard-skills.yaml` with the following workflow. It checks
+pull requests on a GitHub-hosted Ubuntu runner, which includes the required `yq`.
+
+```yaml
+name: Guard installed skill edits
+on: [pull_request]
+permissions: {}
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Guard installed skill edits
+        uses: devantler-tech/guard-installed-skill-edits-action@0b57d72a07a7d2d1b4100b4a84985d03401e18ae # v1.0.2
+```
+
+The example pins verified releases and needs no additional secrets. Check the
+[action releases](https://github.com/devantler-tech/guard-installed-skill-edits-action/releases)
+when choosing a newer version.
+
+## How it detects changes
+
 The checkout is part of the usage, not a precondition you can assume. With no checkout every
 path is absent, so a root-existence test alone would find nothing and exit 0 — a required
 guard reporting success having evaluated nothing. The action therefore checks that it is
@@ -87,16 +117,6 @@ absent root — a required guard passing without evaluating anything. Each commi
 proven readable first, and an absent one is UNKNOWN. `fetch-depth: 0` is what makes both commits
 available, to this check and to the diff.
 
-```yaml
-- name: ⬇️ Checkout
-  uses: actions/checkout@<full-commit-sha> # vX.Y.Z
-  with:
-    fetch-depth: 0
-
-- name: Guard installed skill edits
-  uses: devantler-tech/guard-installed-skill-edits-action@<full-commit-sha> # vX.Y.Z
-```
-
 Pass a different `skill-root` when the consumer installs skills somewhere other than
 `.agents/skills`. A leading `./`, a trailing `/`, or `.` for skills at the repository root are all accepted and normalised.
 
@@ -117,8 +137,6 @@ a `github-repo` whose value is a mapping or a sequence rather than a scalar, an 
 a diff that cannot be computed, or `yq` missing from `PATH`. The action never treats any of those
 as "no provenance", because "no provenance" is what marks a skill local and editable — it is the
 verdict that permits the edit.
-
-## How it detects changes
 
 The check keys on `metadata.github-repo` in each skill's `SKILL.md` at the pull
 request **base**, not on the current path. Provenance must be a **direct child**
