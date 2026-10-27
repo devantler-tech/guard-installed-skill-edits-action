@@ -115,3 +115,27 @@ a `github-repo` whose value is a mapping or a sequence rather than a scalar, an 
 a diff that cannot be computed, or `yq` missing from `PATH`. The action never treats any of those
 as "no provenance", because "no provenance" is what marks a skill local and editable — it is the
 verdict that permits the edit.
+
+## Release recovery
+
+Releases run from protected `main`. To preview the next release without writing
+anything, dispatch the `Release` workflow on `main` with `dry-run` enabled:
+
+```sh
+gh workflow run release.yaml --ref main -f dry-run=true
+```
+
+A dry run previews semantic-release's next version or reports that no release is
+needed. It does not recreate a missing GitHub release for an existing tag.
+If a release fails before creating its tag, repair the failure and rerun the
+workflow from `main`.
+
+If the tag was pushed but its GitHub release is missing, first verify that the
+existing tag resolves to the intended reviewed commit on protected `main` and
+that its CI passed. In the repository's **Releases** page, choose **Draft a new
+release**, select that **existing tag**, generate and review its release notes,
+and publish. Select **Publish this Action to the GitHub Marketplace** if the
+release also needs to be listed there. Confirm the published release's source
+commit and Marketplace version afterward. Do not move or delete the tag, or
+try to edit an immutable release; use a new patch release at the same reviewed
+commit if a published immutable release needs a separate Marketplace listing.
