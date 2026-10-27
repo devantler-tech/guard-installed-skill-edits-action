@@ -32,6 +32,8 @@ jobs:
           persist-credentials: false
       - name: "\U0001F9EA Run hermetic guard suite"
         run: bash .github/tests/guard-installed-skill-edits.test.sh
+      - name: Verify protected release credentials
+        run: bash .github/tests/test-protected-release.sh
       - name: "\U0001F9EA Invoke composite as a consumer would"
         uses: $/
   ci-required-checks:
