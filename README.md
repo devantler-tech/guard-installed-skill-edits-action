@@ -8,8 +8,8 @@ The action fails the pull-request check and names the skill's source repository,
 so contributors know where to make the fix.
 
 For example, if `.agents/skills/ways-of-working/SKILL.md` was installed from
-`devantler-tech/agent-skills`, a pull request editing that copy fails the check. Make the
-change in `devantler-tech/agent-skills`, then update the installed skill.
+`devantler-tech/agent-plugins`, a pull request editing that copy fails the check. Make the
+change in `devantler-tech/agent-plugins`, then update the installed skill.
 
 | Pull-request change | Result |
 | --- | --- |
