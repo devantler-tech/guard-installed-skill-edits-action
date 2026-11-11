@@ -20,9 +20,9 @@ change in `devantler-tech/agent-plugins`, then update the installed skill.
 | Remove an entire skill | Check passes |
 | Update skills through the configured updater | Check passes on the pull request when its account and branch match the configured inputs |
 
-A skill counts as installed when its `SKILL.md` on the pull request's base branch has a
-`github-repo` key directly under `metadata` in its front matter. A skill without that key is
-maintained locally.
+A skill counts as installed when its `SKILL.md` on the pull request's base branch names a source
+repository: a non-empty `github-repo` value directly under `metadata` in its front matter. A
+skill without one is maintained locally.
 
 ## Usage
 
@@ -96,13 +96,17 @@ The action has no outputs. It reports through the check result and the job log:
 | Fail | `UNKNOWN: commit <sha> is not present in this clone` or `could not determine changed paths` | Fetch full history in the checkout; see [Usage](#usage). |
 | Fail | `UNKNOWN: not inside a git work tree` | Add a checkout step before the action. |
 | Fail | `UNKNOWN: BASE_SHA and HEAD_SHA are required` | Run the workflow on `pull_request` and `merge_group` events only. |
-| Fail | `UNKNOWN: <path> at base carries a metadata mapping this guard cannot parse` | Check the runner's `yq` (see [Usage](#usage)), then fix the front matter of the named `SKILL.md`. |
+| Fail | `UNKNOWN: <path> at base carries a metadata mapping this guard cannot parse` | Check the runner's `yq` (see [Usage](#usage)). If the front matter of the named `SKILL.md` is invalid, repair it on the base branch as described below. |
 | Fail | `UNKNOWN: cannot read <path> at base` | Git could not read the file from the base commit. Check out full history without a partial-clone `filter`. |
-| Fail | `UNKNOWN: <path> exists at base but SKILL.md is missing` | Restore the skill's `SKILL.md`, or remove the directory. |
+| Fail | `UNKNOWN: <path> exists at base but SKILL.md is missing` | Restore the skill's `SKILL.md` on the base branch as described below. |
 | Fail | `UNKNOWN: skill-root must be repository-relative` or `must not contain parent traversal` | Correct `skill-root`. |
 
 `UNKNOWN` means the guard could not check the change. It fails then, and never passes a change
 it could not check.
+
+The guard reads `SKILL.md` from the base branch, so a pull request that repairs an invalid or
+missing `SKILL.md` there fails the same way. Repair it with the updater's pull request, which is
+exempt, or remove the whole skill directory in one pull request and add it again in the next.
 
 `nothing to check` means the `skill-root` directory does not exist, so the check passes
 without examining any skill. If your skills live somewhere else, set `skill-root` to that

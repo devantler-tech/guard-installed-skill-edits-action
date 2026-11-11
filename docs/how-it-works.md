@@ -9,12 +9,14 @@ UNKNOWN is reserved for what genuinely cannot be determined: front matter no YAM
 a `github-repo` whose value is a mapping or a sequence rather than a scalar, an unreadable commit,
 a diff that cannot be computed, or `yq` missing from `PATH`. The action never treats any of those
 as "no provenance", because "no provenance" is what marks a skill local and editable — it is the
-verdict that permits the edit. Missing CI context is UNKNOWN too, rather than a silent pass.
+verdict that permits the edit. Missing CI context is UNKNOWN too, rather than a silent pass,
+with one exception: when the event supplies no base or head commit and the skill root is also
+absent from the checkout, the action exits 0 with `nothing to check`.
 
 The action exits 0 in several ordinary situations — a clean checkout with nothing to refuse, a
 wholly new or wholly retired skill, and the programmed-sync exemption — but the *missing-root
 early exit* is reserved for the case where the installed-skill root genuinely does not exist in
-either referenced commit.
+either referenced commit or, when no commits are supplied, in the checkout.
 
 ## Checkout and commits
 
