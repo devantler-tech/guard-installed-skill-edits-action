@@ -14,11 +14,11 @@ change in `devantler-tech/agent-plugins`, then update the installed skill.
 | Pull-request change | Result |
 | --- | --- |
 | Edit a skill installed from another repository | Check fails and names its source repository |
-| Move a file out of an installed skill | Check fails |
+| Move or delete a file inside an installed skill | Check fails |
 | Add a new skill | Check passes |
 | Edit a skill maintained locally | Check passes |
 | Remove an entire skill | Check passes |
-| Update skills through the configured updater | Check passes when its account and branch match the configured inputs |
+| Update skills through the configured updater | Check passes on the pull request when its account and branch match the configured inputs |
 
 A skill counts as installed when its `SKILL.md` on the pull request's base branch has a
 `github-repo` key directly under `metadata` in its front matter. A skill without that key is
@@ -80,7 +80,8 @@ when choosing a newer version.
 | `sync-actor` | Exact GitHub login of the account that opens skill-update pull requests. A GitHub App's login ends in `[bot]`. | no | `botantler-1[bot]` |
 | `sync-branch` | Exact head-branch name of the skill-update pull request | no | `deps/agent-skills-update` |
 
-The full interface is in [`action.yml`](action.yml).
+Set `sync-actor` and `sync-branch` to your own updater's account and branch. The defaults are
+the ones this organisation's updater uses. The full interface is in [`action.yml`](action.yml).
 
 ## Results
 
