@@ -80,8 +80,10 @@ when choosing a newer version.
 | `sync-actor` | Exact GitHub login of the account that opens skill-update pull requests. A GitHub App's login ends in `[bot]`. | no | `botantler-1[bot]` |
 | `sync-branch` | Exact head-branch name of the skill-update pull request | no | `deps/agent-skills-update` |
 
-Set `sync-actor` and `sync-branch` to your own updater's account and branch. The defaults are
-the ones this organisation's updater uses. The full interface is in [`action.yml`](action.yml).
+Set `sync-actor` and `sync-branch` to your own updater's account and branch. The default branch is
+the one the [update-agent-skills](https://github.com/devantler-tech/update-agent-skills-action)
+example uses, and the default account is this organisation's own bot. The full interface is in
+[`action.yml`](action.yml).
 
 ## Results
 
