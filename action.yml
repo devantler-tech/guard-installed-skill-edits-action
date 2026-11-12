@@ -37,7 +37,7 @@ runs:
         # place of the real diff — and any value outside the skill root makes the guard skip
         # every edit and exit 0. Pinning it empty here fences production from the seam.
         CHANGED_PATHS: ""
-      run: bash "${{ github.action_path }}/guard-installed-skill-edits.sh"
+      run: bash "$GITHUB_ACTION_PATH/guard-installed-skill-edits.sh"
 branding:
   icon: package
   color: blue
